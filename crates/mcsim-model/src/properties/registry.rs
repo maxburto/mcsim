@@ -39,6 +39,8 @@ pub const ALL_PROPERTIES: &[&PropertyDef] = &[
     &MESSAGING_FLOOD_ATTEMPTS_NO_PATH.def,
     // Room Server
     &ROOM_SERVER_ROOM_ID.def,
+    // Agent
+    &AGENT_AUTO_SYNC.def,
     // Agent Direct Message
     &AGENT_DIRECT_ENABLED.def,
     &AGENT_DIRECT_STARTUP_S.def,

@@ -239,6 +239,9 @@ pub struct AgentConfig {
     /// Contacts to add to firmware's contact list at startup.
     /// Required for DM communication - firmware needs contacts to decrypt/ACK messages.
     pub contacts: Vec<ContactTarget>,
+    /// Fetch queued messages (SyncNextMessage) whenever the firmware signals one is waiting.
+    /// When false, the messages stay queued in the firmware for an external app on the UART.
+    pub auto_sync: bool,
 }
 
 impl Default for AgentConfig {
@@ -248,6 +251,7 @@ impl Default for AgentConfig {
             direct: DirectMessageConfig::default(),
             channel: ChannelMessageConfig::default(),
             contacts: Vec::new(),
+            auto_sync: true,
         }
     }
 }
@@ -1047,6 +1051,10 @@ impl Agent {
                 // Handle direct message ACK
                 self.handle_direct_ack(ctx);
             }
+            PushNotification::MessageWaiting if !self.config.auto_sync => {
+                // Leave the message queued for the external app on the UART to fetch
+                trace!("Agent[{}]: Message waiting, auto_sync disabled", self.config.name);
+            }
             PushNotification::MessageWaiting => {
                 // A message is waiting - send SyncNextMessage to retrieve it
                 ctx.tracer().log(TraceEvent::custom(
@@ -1321,6 +1329,28 @@ mod tests {
         assert!(!config.is_enabled());
         assert!(!config.direct.enabled);
         assert!(!config.channel.enabled);
+        assert!(config.auto_sync);
+    }
+
+    fn commands_after_message_waiting(auto_sync: bool) -> Vec<Event> {
+        let config = AgentConfig { auto_sync, ..AgentConfig::default() };
+        let firmware = EntityId(2);
+        let mut agent = Agent::new(EntityId(1), config, NodeId::from_bytes([0u8; 32]), firmware);
+        let mut ctx = SimContext::new(1);
+        agent.handle_push(PushNotification::MessageWaiting, &mut ctx);
+        ctx.take_pending_events()
+    }
+
+    #[test]
+    fn test_message_waiting_syncs_by_default() {
+        let events = commands_after_message_waiting(true);
+        assert_eq!(events.len(), 1);
+        assert!(matches!(events[0].payload, EventPayload::SerialRx(_)));
+    }
+
+    #[test]
+    fn test_message_waiting_left_queued_without_auto_sync() {
+        assert!(commands_after_message_waiting(false).is_empty());
     }
 
     #[test]

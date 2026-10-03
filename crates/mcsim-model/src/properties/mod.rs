@@ -73,6 +73,8 @@ pub use types::{
 
 // Re-export all property definitions for easy access
 pub use definitions::{
+    // Agent
+    AGENT_AUTO_SYNC,
     // Agent Direct Message
     AGENT_DIRECT_ENABLED,
     AGENT_DIRECT_STARTUP_S,

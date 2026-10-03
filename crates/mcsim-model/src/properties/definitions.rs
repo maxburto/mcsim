@@ -278,6 +278,19 @@ pub const CLI_COMMANDS: Property<Vec<String>, NodeScope> = Property::new(
 .with_type(PropertyType::new(PropertyBaseType::String).array());
 
 // ============================================================================
+// Agent Properties (Node scope)
+// ============================================================================
+
+/// Whether a companion's agent fetches queued messages itself.
+pub const AGENT_AUTO_SYNC: Property<bool, NodeScope> = Property::new(
+    "agent/auto_sync",
+    "Fetch queued messages from the companion firmware whenever it signals that one is waiting. \
+     Set to false when an external app connected to the node's UART (firmware/uart_port) should \
+     fetch them itself, as with a real companion radio",
+    PropertyDefault::Bool(true),
+);
+
+// ============================================================================
 // Agent Direct Message Properties (Node scope)
 // ============================================================================
 

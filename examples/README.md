@@ -203,6 +203,25 @@ nodes:
     uart_port: 9100  # External apps connect via TCP to this port
 ```
 
+Every companion also has a built-in agent, and by default the agent fetches each queued message
+as soon as the firmware signals that one is waiting. An app connected to the UART then receives
+messages it did not ask for, and its own fetching (`CMD_SYNC_NEXT_MESSAGE`) is never exercised.
+To leave queued messages to the app, as on a real companion radio, turn the agent's fetching off:
+
+```yaml
+nodes:
+  - name: "MyNode"
+    firmware:
+      type: Companion
+      uart_port: 9100
+    agent:
+      auto_sync: false  # The app on the UART fetches queued messages itself
+```
+
+The agent still sets up channels and contacts at startup and can still send its own messages.
+Because it no longer reads the node's incoming messages, delivery metrics for messages this node
+receives (`mcsim.dm.delivered`, `mcsim.dm.delivery_latency_ms`) are not recorded.
+
 ### Marginal Links
 
 To create an unreliable link, use low SNR values:

@@ -30,6 +30,7 @@ pub use properties::{
     RADIO_FREQUENCY_HZ, RADIO_BANDWIDTH_HZ, RADIO_SPREADING_FACTOR, RADIO_CODING_RATE, RADIO_TX_POWER_DBM,
     COMPANION_CHANNELS, COMPANION_CONTACTS, COMPANION_AUTO_CONTACTS_MAX,
     // Agent properties
+    AGENT_AUTO_SYNC,
     AGENT_DIRECT_ENABLED, AGENT_DIRECT_STARTUP_S, AGENT_DIRECT_STARTUP_JITTER_S, AGENT_DIRECT_TARGETS,
     AGENT_DIRECT_INTERVAL_S, AGENT_DIRECT_INTERVAL_JITTER_S, AGENT_DIRECT_ACK_TIMEOUT_S,
     AGENT_DIRECT_SESSION_MESSAGE_COUNT, AGENT_DIRECT_SESSION_INTERVAL_S, AGENT_DIRECT_SESSION_INTERVAL_JITTER_S,
@@ -956,6 +957,7 @@ pub fn build_simulation(model: &Model, seed: u64) -> Result<BuiltSimulation, Mod
             direct: direct_config,
             channel: channel_config,
             contacts,
+            auto_sync: props.get(&AGENT_AUTO_SYNC),
         };
 
         let agent = mcsim_agents::Agent::new(agent_id, agent_config, node_id, firmware_id);
