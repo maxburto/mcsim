@@ -495,6 +495,7 @@ fn build_firmware_dll(
         "TransportKeyStore.cpp",
         "RegionMap.cpp",
         "ArduinoSerialInterface.cpp",
+        "ConfigSerializer.cpp",
     ];
 
     for src in &meshcore_helpers {
