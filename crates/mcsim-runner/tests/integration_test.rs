@@ -6,7 +6,7 @@ use std::path::Path;
 
 use mcsim_common::{EntityId, Event, EventId, EventPayload, GeoCoord, SimTime};
 use mcsim_lora::{calculate_time_on_air, RadioParams};
-use mcsim_model::{load_model, load_model_from_str, ModelLoader, AGENT_DIRECT_ENABLED, AGENT_CHANNEL_ENABLED, RADIO_SPREADING_FACTOR, properties::{FIRMWARE_TYPE, LOCATION_ALTITUDE_M}};
+use mcsim_model::{load_model, load_model_from_str, ModelLoader, AGENT_AUTO_SYNC, AGENT_DIRECT_ENABLED, AGENT_CHANNEL_ENABLED, RADIO_SPREADING_FACTOR, properties::{FIRMWARE_TYPE, LOCATION_ALTITUDE_M}};
 
 // ============================================================================
 // Model Loading Integration Tests
@@ -405,6 +405,31 @@ edges:
 
     // Simulation adds initial timer events to start firmware
     assert!(!sim.initial_events.is_empty(), "Expected initial events for firmware startup");
+}
+
+#[test]
+fn test_agent_auto_sync_property() {
+    let yaml = r#"
+nodes:
+  - name: "App"
+    firmware:
+      type: Companion
+      uart_port: 9100
+    agent:
+      auto_sync: false
+
+  - name: "Bot"
+    firmware:
+      type: Companion
+"#;
+
+    let model = load_model_from_str(yaml).expect("Failed to parse model");
+    let app_auto_sync: bool = model.nodes().get("App").unwrap().properties().get(&AGENT_AUTO_SYNC);
+    let bot_auto_sync: bool = model.nodes().get("Bot").unwrap().properties().get(&AGENT_AUTO_SYNC);
+    assert!(!app_auto_sync);
+    assert!(bot_auto_sync, "auto_sync defaults to true");
+
+    ModelLoader::build_simulation(&model, 42).expect("Failed to build simulation");
 }
 
 #[test]
