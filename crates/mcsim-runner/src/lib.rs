@@ -281,6 +281,11 @@ impl TraceRecorder {
 
     /// Record an event.
     pub fn record(&mut self, entry: TraceEntry) {
+        // Entries are only written by flush() when there is an output. Without one (e.g. a
+        // realtime `mcsim run` with no -o) keeping them would grow memory for the whole run.
+        if self.output.is_none() {
+            return;
+        }
         self.entries.push(entry);
     }
 
@@ -1344,3 +1349,36 @@ pub fn create_event_loop(
 
 // Re-export key types for convenience
 pub use mcsim_model::{build_simulation, load_model, load_model_from_str, BuiltSimulation as SimulationBuild, ModelLoader};
+
+#[cfg(test)]
+mod trace_recorder_tests {
+    use super::*;
+
+    fn timer_entry() -> TraceEntry {
+        TraceEntry {
+            origin: "node".to_string(),
+            origin_id: "1".to_string(),
+            timestamp: "2026-01-01T00:00:00Z".to_string(),
+            payload: TracePayload::Timer(TimerPayload { timer_id: 0 }),
+        }
+    }
+
+    #[test]
+    fn without_output_entries_are_not_retained() {
+        let mut recorder = TraceRecorder::new(None);
+        for _ in 0..1000 {
+            recorder.record(timer_entry());
+        }
+        assert!(recorder.entries.is_empty());
+        recorder.flush().unwrap();
+    }
+
+    #[test]
+    fn with_output_entries_are_kept_for_flush() {
+        let mut recorder = TraceRecorder::new(Some(Box::new(std::io::sink())));
+        recorder.record(timer_entry());
+        recorder.record(timer_entry());
+        assert_eq!(recorder.entries.len(), 2);
+        recorder.flush().unwrap();
+    }
+}
