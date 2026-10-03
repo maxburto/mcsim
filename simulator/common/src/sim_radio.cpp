@@ -34,6 +34,15 @@ void SimRadio::configure(float freq, float bw, uint8_t sf, uint8_t cr, uint8_t t
     tx_power_ = tx_power;
 }
 
+// The node's radio is configured from SimNodeConfig before the firmware is
+// created (SimNodeImpl::threadMain, sim_reboot), so these return the node's
+// configured radio parameters when the firmware reads its LORA_* defaults.
+float sim_config_lora_freq() { return _sim_radio_instance.getFreq(); }
+float sim_config_lora_bw() { return _sim_radio_instance.getBandwidth(); }
+int sim_config_lora_sf() { return _sim_radio_instance.getSpreadingFactor(); }
+int sim_config_lora_cr() { return _sim_radio_instance.getCodingRate(); }
+int sim_config_lora_tx_power() { return _sim_radio_instance.getTxPower(); }
+
 void SimRadio::begin() {
     recv_mode_ = true;
     tx_pending_ = false;
