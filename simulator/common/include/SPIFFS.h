@@ -9,15 +9,15 @@
 #include "Arduino.h"  // For Stream base class
 #include <cstdint>
 
-// Forward declare fs::FS for inheritance
-namespace fs {
-class FS;
-}
-
 // Forward declare the filesystem access
 struct SimContext;
 extern thread_local SimContext* g_sim_ctx;
 SimFilesystem& getSimFilesystem();
+
+// fs::File and fs::FS live in namespace fs and are also visible globally,
+// as in the ESP32 Arduino core's FS.h (firmware code uses both spellings).
+namespace fs {
+class FS;
 
 // File wrapper - inherits from Stream so it can be passed to readFrom/writeTo
 class File : public Stream {
@@ -137,8 +137,6 @@ private:
     std::string path_;
 };
 
-// Forward declare fs::FS for inheritance
-namespace fs {
 class FS {
 public:
     virtual ~FS() = default;
@@ -149,7 +147,10 @@ public:
     virtual bool rmdir(const char* path) { (void)path; return true; }
     virtual bool format() { return true; }
 };
-}
+}  // namespace fs
+
+using fs::File;
+using fs::FS;
 
 // SPIFFS class - inherits from fs::FS for compatibility with firmware code
 class SPIFFSClass : public fs::FS {
