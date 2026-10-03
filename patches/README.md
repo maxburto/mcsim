@@ -27,13 +27,13 @@ git checkout .
 
 ### Base Version
 
-This patch is based on upstream MeshCore commit:
+This patch is based on upstream MeshCore release:
 
-- **Commit:** `e738a7477737964464038a87b3113a7a0ce7ebbc`
+- **Tag:** `companion-v1.17.1`
+- **Commit:** `d92964352441e53b93e8667b802e04f6e072b39e`
 - **Upstream:** <https://github.com/meshcore-dev/MeshCore.git>
-- **Description:** Merge branch 'dev' (v1.12.0)
 
-The submodule points to our fork (<https://github.com/Brent-A/MeshCore.git>) which has these changes already applied at commit `980693bd29eeae03c6bdeffdf376d50f0b793e5e`.
+The submodule points to our fork (<https://github.com/Brent-A/MeshCore.git>) which has these changes already applied at commit `2c802d93` (upstream release merged into the simulator branch).
 
 ### Notes
 

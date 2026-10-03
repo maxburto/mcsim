@@ -258,3 +258,21 @@ uint32_t SimRadio::getTxAirtime() const {
     float t_payload = payload_symbols * ts;
     return static_cast<uint32_t>((t_preamble + t_payload) * 1000.0f);
 }
+
+// Radio settings interface (MeshCore >= 1.16 calls these on radio_driver)
+
+void SimRadio::setParams(float freq, float bw, uint8_t sf, uint8_t cr) {
+    freq_ = freq;
+    bw_ = bw;
+    sf_ = sf;
+    cr_ = cr;
+}
+
+void SimRadio::setTxPower(int8_t dbm) {
+    tx_power_ = dbm;
+}
+
+bool SimRadio::setRxBoostedGainMode(bool enable) {
+    rx_boosted_gain_ = enable;
+    return true;
+}

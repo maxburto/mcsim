@@ -56,6 +56,15 @@ public:
     void resetStats() { packets_recv_ = 0; packets_sent_ = 0; packets_recv_errors_ = 0; total_tx_airtime_ = 0; total_rx_airtime_ = 0; }
     uint32_t getTotalTxAirtime() const { return total_tx_airtime_; }
     uint32_t getTotalRxAirtime() const { return total_rx_airtime_; }
+
+    // Radio settings interface (used by firmware). On real boards these come from
+    // RadioLibWrapper; here they record what the firmware asked for, and the
+    // firmware's airtime estimate follows them. The simulated air uses the
+    // node's radio parameters from the simulation model.
+    void setParams(float freq, float bw, uint8_t sf, uint8_t cr);
+    void setTxPower(int8_t dbm);
+    bool setRxBoostedGainMode(bool enable);
+    bool getRxBoostedGainMode() const { return rx_boosted_gain_; }
     
     // Simulation interface (called by coordinator)
     void injectRxPacket(const uint8_t* data, size_t len, float rssi, float snr);
@@ -112,4 +121,5 @@ private:
     
     // State
     bool recv_mode_;
+    bool rx_boosted_gain_ = false;
 };

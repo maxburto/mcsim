@@ -106,6 +106,7 @@ fn main() {
     println!("cargo:rerun-if-changed={}", simulator_dir.display());
     println!("cargo:rerun-if-changed={}", meshcore_src.display());
     println!("cargo:rerun-if-changed={}", meshcore_lib.display());
+    println!("cargo:rerun-if-changed={}", meshcore_examples.display());
 
     // Build each firmware DLL
     build_firmware_dll(
@@ -149,6 +150,33 @@ fn main() {
 
     // Output the library search path for Rust to find the DLLs
     println!("cargo:rustc-link-search=native={}", out_dir.display());
+}
+
+/// FIRMWARE_VERSION as MeshCore's build.sh sets it: the firmware's own version
+/// followed by the short commit of the MeshCore checkout (e.g. "v1.17.1-2c802d9").
+/// Returns None (the firmware keeps its built-in version) when git is not available.
+fn firmware_version(meshcore_dir: &Path, example_dir: &Path) -> Option<String> {
+    let header = fs::read_to_string(example_dir.join("MyMesh.h")).ok()?;
+    let version = header.lines().find_map(|line| {
+        let mut tokens = line.split_whitespace();
+        match (tokens.next(), tokens.next(), tokens.next()) {
+            (Some("#define"), Some("FIRMWARE_VERSION"), Some(value)) => {
+                Some(value.trim_matches('"').to_string())
+            }
+            _ => None,
+        }
+    })?;
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(meshcore_dir)
+        .args(["rev-parse", "--short", "HEAD"])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let commit = String::from_utf8(output.stdout).ok()?.trim().to_string();
+    Some(format!("\"{}-{}\"", version, commit))
 }
 
 /// Compile a single source file to an object file
@@ -376,7 +404,8 @@ fn build_firmware_dll(
     let include_refs: Vec<&Path> = includes.iter().map(|p| p.as_path()).collect();
 
     // Preprocessor definitions
-    let defines: Vec<(&str, Option<&str>)> = vec![
+    let version = firmware_version(meshcore_src.parent().unwrap(), example_dir);
+    let mut defines: Vec<(&str, Option<&str>)> = vec![
         ("SIM_BUILD", Some("1")),
         ("ARDUINO", Some("100")),
         ("SIM_PLATFORM", Some("1")),
@@ -386,6 +415,9 @@ fn build_firmware_dll(
         ("WIN32", None),
         ("_WINDOWS", None),
     ];
+    if let Some(version) = &version {
+        defines.push(("FIRMWARE_VERSION", Some(version.as_str())));
+    }
 
     let mut objects: Vec<PathBuf> = Vec::new();
 
