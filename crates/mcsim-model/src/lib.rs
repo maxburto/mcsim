@@ -608,7 +608,7 @@ pub fn build_simulation(model: &Model, seed: u64) -> Result<BuiltSimulation, Mod
             altitude_m: resolved.get(&properties::LOCATION_ALTITUDE_M),
         };
         let radio_config = mcsim_lora::RadioConfig {
-            params: radio_params,
+            params: radio_params.clone(),
             rx_to_tx_turnaround: SimTime::from_micros(100),
             tx_to_rx_turnaround: SimTime::from_micros(100),
             graph_entity: graph_id,
@@ -661,6 +661,7 @@ pub fn build_simulation(model: &Model, seed: u64) -> Result<BuiltSimulation, Mod
                         private_key,
                         encryption_key: None,
                         rng_seed: node_rng_seed,
+                        radio: Some(radio_params.clone()),
                     },
                 };
                 let mut firmware = RepeaterFirmware::with_sim_params(firmware_id, fw_config, radio_id, node.name.clone(), &node_firmware_sim_params)?;
@@ -704,6 +705,7 @@ pub fn build_simulation(model: &Model, seed: u64) -> Result<BuiltSimulation, Mod
                         private_key,
                         encryption_key: None,
                         rng_seed: node_rng_seed,
+                        radio: Some(radio_params.clone()),
                     },
                 };
                 let firmware = CompanionFirmware::with_sim_params(firmware_id, fw_config, radio_id, agent_id, node.name.clone(), &node_firmware_sim_params)?;
@@ -752,6 +754,7 @@ pub fn build_simulation(model: &Model, seed: u64) -> Result<BuiltSimulation, Mod
                         private_key,
                         encryption_key: None,
                         rng_seed: node_rng_seed,
+                        radio: Some(radio_params.clone()),
                     },
                     room_id,
                 };

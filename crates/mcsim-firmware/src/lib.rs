@@ -31,7 +31,7 @@ use dll::{DllError, FirmwareDll, FirmwareType, NodeConfig, OwnedFirmwareNode};
 pub use dll::{YieldReason, FirmwareSimulationParams};
 use mcsim_common::{
     entity_tracer::FirmwareYieldReason,
-    Entity, EntityId, Event, EventPayload, NodeId, SimContext, SimError, SimTime,
+    Entity, EntityId, Event, EventPayload, NodeId, RadioParams, SimContext, SimError, SimTime,
 };
 use meshcore_packet::EncryptionKey;
 use serde::{Deserialize, Serialize};
@@ -107,6 +107,9 @@ pub struct FirmwareConfig {
     pub encryption_key: Option<EncryptionKey>,
     /// RNG seed for deterministic simulation.
     pub rng_seed: u32,
+    /// Radio parameters the firmware starts with (its default radio settings).
+    /// `None` keeps MeshCore's compile-time defaults (915 MHz, 250 kHz, SF10, CR5, 20 dBm).
+    pub radio: Option<RadioParams>,
 }
 
 impl Default for FirmwareConfig {
@@ -117,6 +120,7 @@ impl Default for FirmwareConfig {
             private_key: [0u8; 32],
             encryption_key: None,
             rng_seed: 12345, // Default seed - should be overridden per node
+            radio: None,
         }
     }
 }
@@ -246,7 +250,7 @@ impl RepeaterFirmware {
         // Use initial RTC time from simulation parameters
         let initial_rtc: u32 = sim_params.initial_rtc_secs as u32;
 
-        let node_config = NodeConfig::default()
+        let mut node_config = NodeConfig::default()
             .with_keys(&config.base.public_key, &prv_key_64)
             .with_initial_time(0, initial_rtc)
             .with_rng_seed(config.base.rng_seed)
@@ -259,6 +263,9 @@ impl RepeaterFirmware {
                 sim_params.log_spin_detection,
                 sim_params.log_loop_iterations,
             );
+        if let Some(radio) = &config.base.radio {
+            node_config = node_config.with_radio_params(radio);
+        }
 
         // Create the persistent node
         let node = OwnedFirmwareNode::new(dll, &node_config)
@@ -635,7 +642,7 @@ impl CompanionFirmware {
         // Use initial RTC time from simulation parameters
         let initial_rtc: u32 = sim_params.initial_rtc_secs as u32;
 
-        let node_config = NodeConfig::default()
+        let mut node_config = NodeConfig::default()
             .with_keys(&config.base.public_key, &prv_key_64)
             .with_initial_time(0, initial_rtc)
             .with_rng_seed(config.base.rng_seed)
@@ -648,6 +655,9 @@ impl CompanionFirmware {
                 sim_params.log_spin_detection,
                 sim_params.log_loop_iterations,
             );
+        if let Some(radio) = &config.base.radio {
+            node_config = node_config.with_radio_params(radio);
+        }
 
         // Create the persistent node
         let node = OwnedFirmwareNode::new(dll, &node_config)
@@ -1024,7 +1034,7 @@ impl RoomServerFirmware {
         // Use initial RTC time from simulation parameters
         let initial_rtc: u32 = sim_params.initial_rtc_secs as u32;
 
-        let node_config = NodeConfig::default()
+        let mut node_config = NodeConfig::default()
             .with_keys(&config.base.public_key, &prv_key_64)
             .with_initial_time(0, initial_rtc)
             .with_rng_seed(config.base.rng_seed)
@@ -1037,6 +1047,9 @@ impl RoomServerFirmware {
                 sim_params.log_spin_detection,
                 sim_params.log_loop_iterations,
             );
+        if let Some(radio) = &config.base.radio {
+            node_config = node_config.with_radio_params(radio);
+        }
 
         // Create the persistent node
         let node = OwnedFirmwareNode::new(dll, &node_config)

@@ -34,6 +34,11 @@ public:
     
     // Configuration
     void configure(float freq, float bw, uint8_t sf, uint8_t cr, uint8_t tx_power);
+    float getFreq() const { return freq_; }
+    float getBandwidth() const { return bw_; }
+    uint8_t getSpreadingFactor() const { return sf_; }
+    uint8_t getCodingRate() const { return cr_; }
+    uint8_t getTxPower() const { return tx_power_; }
     
     // mesh::Radio interface
     void begin() override;

@@ -28,6 +28,23 @@
 // Disable CLI rescue mode (uses VLAs which MSVC doesn't support)
 #define NO_CLI_RESCUE 1
 
+// Radio defaults: the firmware examples take their default radio settings from
+// LORA_FREQ/LORA_BW/LORA_SF/LORA_CR/LORA_TX_POWER (set per board by build flags on
+// real hardware). In the simulator they are the node's configured radio parameters
+// (SimNodeConfig lora_*), so the firmware runs on the settings the simulation gives it.
+#ifdef __cplusplus
+float sim_config_lora_freq();
+float sim_config_lora_bw();
+int sim_config_lora_sf();
+int sim_config_lora_cr();
+int sim_config_lora_tx_power();
+#endif
+#define LORA_FREQ     sim_config_lora_freq()
+#define LORA_BW       sim_config_lora_bw()
+#define LORA_SF       sim_config_lora_sf()
+#define LORA_CR       sim_config_lora_cr()
+#define LORA_TX_POWER sim_config_lora_tx_power()
+
 // Firmware config defaults
 #ifndef MAX_NEIGHBOURS
 #define MAX_NEIGHBOURS 16

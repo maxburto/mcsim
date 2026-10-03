@@ -22,6 +22,7 @@
 //! ```
 
 use libloading::Library;
+use mcsim_common::RadioParams;
 use std::ffi::{c_char, CStr, CString};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -198,9 +199,10 @@ impl Default for NodeConfig {
         Self {
             public_key: [0; PUB_KEY_SIZE],
             private_key: [0; PRV_KEY_SIZE],
+            // MeshCore's compile-time radio defaults (examples' LORA_* fallbacks).
             lora_freq: 915.0,
             lora_bw: 250.0,
-            lora_sf: 11,
+            lora_sf: 10,
             lora_cr: 5,
             lora_tx_power: 20,
             initial_millis: 0,
@@ -257,6 +259,17 @@ impl NodeConfig {
         self.lora_cr = cr;
         self.lora_tx_power = tx_power;
         self
+    }
+
+    /// Set LoRa parameters from simulation radio parameters (Hz units).
+    pub fn with_radio_params(self, params: &RadioParams) -> Self {
+        self.with_lora(
+            (params.frequency_hz as f64 / 1_000_000.0) as f32,
+            (params.bandwidth_hz as f64 / 1_000.0) as f32,
+            params.spreading_factor,
+            params.coding_rate,
+            params.tx_power_dbm.max(0) as u8,
+        )
     }
 
     /// Set spin detection configuration.
@@ -893,7 +906,7 @@ mod tests {
     fn test_node_config_default() {
         let config = NodeConfig::default();
         assert_eq!(config.lora_freq, 915.0);
-        assert_eq!(config.lora_sf, 11);
+        assert_eq!(config.lora_sf, 10);
         assert_eq!(config.rng_seed, 12345);
         assert_eq!(config.lora_bw, 250.0);
         assert_eq!(config.lora_cr, 5);
