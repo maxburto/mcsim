@@ -205,6 +205,8 @@ pub struct RepeaterFirmware {
     awaiting_tx_complete: bool,
     // Next wake time
     wake_millis: u64,
+    // Sim time (us) of the one wake timer still pending, if any
+    pending_wake_us: Option<u64>,
     // Startup time in microseconds - events before this are dropped
     startup_time_us: u64,
 }
@@ -276,6 +278,7 @@ impl RepeaterFirmware {
             pending_tx: None,
             awaiting_tx_complete: false,
             wake_millis: 0,
+            pending_wake_us: None,
             startup_time_us: sim_params.startup_time_us,
         })
     }
@@ -322,6 +325,14 @@ impl Entity for RepeaterFirmware {
                 self.name, event.payload, event_time_us, self.startup_time_us
             );
             return Ok(());
+        }
+
+        // A wake timer that a later step superseded does nothing
+        if let EventPayload::Timer { .. } = event.payload {
+            if self.pending_wake_us != Some(event_time_us) {
+                return Ok(());
+            }
+            self.pending_wake_us = None;
         }
 
         // Log event received
@@ -411,16 +422,21 @@ impl Entity for RepeaterFirmware {
                 );
             }
             YieldReason::Idle => {
-                // Schedule wake timer if needed
+                // At most one pending wake per node: an earlier or equal one is
+                // kept, a later one is superseded (it does nothing when it fires)
                 if result.wake_millis > self.current_millis {
                     let delay_us = (result.wake_millis - self.current_millis) * 1000;
-                    let delay_ms = delay_us / 1000;
-                    tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
-                    ctx.post_event(
-                        SimTime::from_micros(delay_us),
-                        vec![self.id],
-                        EventPayload::Timer { timer_id: 1 },
-                    );
+                    let wake_us = (ctx.time() + SimTime::from_micros(delay_us)).as_micros();
+                    if self.pending_wake_us.map_or(true, |pending| wake_us < pending) {
+                        self.pending_wake_us = Some(wake_us);
+                        let delay_ms = delay_us / 1000;
+                        tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
+                        ctx.post_event(
+                            SimTime::from_micros(delay_us),
+                            vec![self.id],
+                            EventPayload::Timer { timer_id: 1 },
+                        );
+                    }
                 }
             }
             YieldReason::RadioTxComplete => {
@@ -591,6 +607,8 @@ pub struct CompanionFirmware {
     pending_tx: Option<(Vec<u8>, u32)>,
     awaiting_tx_complete: bool,
     wake_millis: u64,
+    // Sim time (us) of the one wake timer still pending, if any
+    pending_wake_us: Option<u64>,
     // Startup time in microseconds - events before this are dropped
     startup_time_us: u64,
 }
@@ -665,6 +683,7 @@ impl CompanionFirmware {
             pending_tx: None,
             awaiting_tx_complete: false,
             wake_millis: 0,
+            pending_wake_us: None,
             startup_time_us: sim_params.startup_time_us,
         })
     }
@@ -710,6 +729,14 @@ impl Entity for CompanionFirmware {
                 self.name, event.payload, event_time_us, self.startup_time_us
             );
             return Ok(());
+        }
+
+        // A wake timer that a later step superseded does nothing
+        if let EventPayload::Timer { .. } = event.payload {
+            if self.pending_wake_us != Some(event_time_us) {
+                return Ok(());
+            }
+            self.pending_wake_us = None;
         }
 
         // Log event received
@@ -802,15 +829,21 @@ impl Entity for CompanionFirmware {
                 );
             }
             YieldReason::Idle => {
+                // At most one pending wake per node: an earlier or equal one is
+                // kept, a later one is superseded (it does nothing when it fires)
                 if result.wake_millis > self.current_millis {
                     let delay_us = (result.wake_millis - self.current_millis) * 1000;
-                    let delay_ms = delay_us / 1000;
-                    tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
-                    ctx.post_event(
-                        SimTime::from_micros(delay_us),
-                        vec![self.id],
-                        EventPayload::Timer { timer_id: 1 },
-                    );
+                    let wake_us = (ctx.time() + SimTime::from_micros(delay_us)).as_micros();
+                    if self.pending_wake_us.map_or(true, |pending| wake_us < pending) {
+                        self.pending_wake_us = Some(wake_us);
+                        let delay_ms = delay_us / 1000;
+                        tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
+                        ctx.post_event(
+                            SimTime::from_micros(delay_us),
+                            vec![self.id],
+                            EventPayload::Timer { timer_id: 1 },
+                        );
+                    }
                 }
             }
             YieldReason::RadioTxComplete => {
@@ -983,6 +1016,8 @@ pub struct RoomServerFirmware {
     pending_tx: Option<(Vec<u8>, u32)>,
     awaiting_tx_complete: bool,
     wake_millis: u64,
+    // Sim time (us) of the one wake timer still pending, if any
+    pending_wake_us: Option<u64>,
     // Startup time in microseconds - events before this are dropped
     startup_time_us: u64,
 }
@@ -1054,6 +1089,7 @@ impl RoomServerFirmware {
             pending_tx: None,
             awaiting_tx_complete: false,
             wake_millis: 0,
+            pending_wake_us: None,
             startup_time_us: sim_params.startup_time_us,
         })
     }
@@ -1099,6 +1135,14 @@ impl Entity for RoomServerFirmware {
                 self.name, event.payload, event_time_us, self.startup_time_us
             );
             return Ok(());
+        }
+
+        // A wake timer that a later step superseded does nothing
+        if let EventPayload::Timer { .. } = event.payload {
+            if self.pending_wake_us != Some(event_time_us) {
+                return Ok(());
+            }
+            self.pending_wake_us = None;
         }
 
         // Log event received
@@ -1184,15 +1228,21 @@ impl Entity for RoomServerFirmware {
                 );
             }
             YieldReason::Idle => {
+                // At most one pending wake per node: an earlier or equal one is
+                // kept, a later one is superseded (it does nothing when it fires)
                 if result.wake_millis > self.current_millis {
                     let delay_us = (result.wake_millis - self.current_millis) * 1000;
-                    let delay_ms = delay_us / 1000;
-                    tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
-                    ctx.post_event(
-                        SimTime::from_micros(delay_us),
-                        vec![self.id],
-                        EventPayload::Timer { timer_id: 1 },
-                    );
+                    let wake_us = (ctx.time() + SimTime::from_micros(delay_us)).as_micros();
+                    if self.pending_wake_us.map_or(true, |pending| wake_us < pending) {
+                        self.pending_wake_us = Some(wake_us);
+                        let delay_ms = delay_us / 1000;
+                        tracer.log_timer_scheduled(Some(&self.name), self.id, event.time, 1, delay_ms);
+                        ctx.post_event(
+                            SimTime::from_micros(delay_us),
+                            vec![self.id],
+                            EventPayload::Timer { timer_id: 1 },
+                        );
+                    }
                 }
             }
             YieldReason::RadioTxComplete => {
